@@ -67,19 +67,22 @@ class Producto implements ICrudBase{
 
     public function ValidarSectorRol($rol){
 
-        if($this -> getSector() == "Vinoteca" && $rol == "Bartender"){
+        if($this -> getSector() == "vinoteca" && $rol == "bartender"){
             return true;
 
-        }else if($this -> getSector() == "Cerveceria" && $rol == "Cervecero"){
+        }else if($this -> getSector() == "cerveceria" && $rol == "cervecero"){
             return true;
 
-        }else if($this -> getSector() == "Cocinero" && $rol == "Cocina"){
+        }else if($this -> getSector() == "cocina" && $rol == "cocinero"){
             return true;
 
-        }else if($this -> getSector() == "Candybar" && $rol == "CandyBar"){
+        }else if($this -> getSector() == "candybar" && $rol == "candyBar"){
             return true;
             
         }else{
+            if($rol == "mozo"){
+                return true;
+            }
             return false;
         }
     }

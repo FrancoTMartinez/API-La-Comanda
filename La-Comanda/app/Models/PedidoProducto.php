@@ -73,10 +73,11 @@ class PedidoProducto{
     public static function Update($obj){
         $objAccesoDatos = DataAccess::getInstance();
 
-        $consulta = $objAccesoDatos->prepareQuery("UPDATE Pedidos_Productos SET producto_estado = :producto_estado WHERE codigo_pedido = :codigo_pedido AND id_producto = :id_producto");
+        $consulta = $objAccesoDatos->prepareQuery("UPDATE Pedidos_Productos SET producto_estado = :producto_estado, id_empleado= :id_empleado WHERE codigo_pedido = :codigo_pedido AND id_producto = :id_producto");
         $consulta->bindValue(':producto_estado', $obj -> getProductoEstado(), PDO::PARAM_STR);
         $consulta->bindValue(':codigo_pedido', $obj -> getCodigoPedido(), PDO::PARAM_STR);
         $consulta->bindValue(':id_producto', $obj -> getIdProducto(), PDO::PARAM_INT);
+        $consulta->bindValue(':id_empleado', $obj -> getIdEmpleado(), PDO::PARAM_INT);
         $consulta->execute();
 
         return $consulta->fetchObject('PedidoProducto');

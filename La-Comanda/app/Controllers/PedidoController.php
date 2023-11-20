@@ -51,6 +51,8 @@ class PedidoController extends Pedido
     $pedido->setEstado(strtolower($estado));
     $pedido->setCodigoMesa($codigo_Mesa);
     // $pedido->setFoto($foto);  hacerlo un array asi lo devovlemos de esa manera
+
+    //el tiempo estimado total tiene que ser la fecha hora comienzo + los minutos que tarde el pedido
     $pedido->setTiempoEstimadoTotal($tiempo_estimado_total);
     $pedido->setPrecioTotal($precio_total);
     $pedido->setFacturado(false);
@@ -88,9 +90,14 @@ class PedidoController extends Pedido
       $payload = json_encode("Pedido no encontrado.");
     } else {
       if ($pedido->getEstado() == Estado::PREPARACION) {
-        $minutosRestantes = Pedido::CalcularMinutosPasados($pedido->getFechaComienzo(), $pedido->getTiempoEstimadoTotal());
 
-        $payload = json_encode("El tiempo restante para su pedido es: " . $minutosRestantes);
+        $minutosRestantes = Pedido::CalcularMinutosPasados(substr($pedido->getFechaComienzo(), 11, 8), $pedido->getTiempoEstimadoTotal());
+
+        if($minutosRestantes > 0){
+          $payload = json_encode("El tiempo restante para su pedido es de " . $minutosRestantes . " minutos.");
+        }else{
+          $payload = json_encode("Su pedido ya deberia estar listo.");
+        }
       } else if ($pedido->getEstado() == Estado::PENDIENTE) {
         $payload = json_encode("El pedido se encuentra en el estado pendiente, una vez que el estado cambie a EN PREPARACION, podra ver el tiempo estimado restante.");
       } else {
@@ -134,10 +141,26 @@ class PedidoController extends Pedido
 
         if(!$producto-> ValidarSectorRol($empleado -> get_rol())){
           $payload = json_encode(array("mensaje" => "El empleado que intenta tomar esete pedido es de un sector distinto al producto. El sector del empleado es: " .$empleado -> get_rol() . " y el sector del producto es: " . $producto-> getSector()));
+          $response->getBody()->write($payload);
+          return $response
+            ->withHeader('Content-Type', 'application/json');
         }
 
       }else{
+        var_dump($empleado);
         $payload = json_encode(array("mensaje" => "El empleado que intenta tomar el pedido esta dado de baja. En la fecha: ". $empleado->get_fecha_baja()));
+        $response->getBody()->write($payload);
+        return $response
+          ->withHeader('Content-Type', 'application/json');
+      }
+
+      //solo el mozo puede modificar el estado de la mesa
+      if ($estado == Estado::ENTREGADO && $empleado -> get_rol() != "mozo") {
+        $payload = json_encode(array("mensaje" => "El estado del pedido Entregado solo puede ser cambiado por el mozo."));
+
+        $response->getBody()->write($payload);
+        return $response
+          ->withHeader('Content-Type', 'application/json');
       }
 
       $pedidoProducto->setIdEmpleado($id_empleado);
@@ -148,12 +171,9 @@ class PedidoController extends Pedido
       $pedido -> setEstado($estado);
       Pedido::UpdateEstado($pedido);
 
-      //solo el mozo puede modificar el estado de la mesa
-      if ($estado == Estado::ENTREGADO && $empleado -> get_rol() == "mozo") {
-        $mesa = Mesa::GetById($pedidoProducto->getCodigoMesa());
-        $mesa -> setEstado(ESTADO::COMIENDO);
-        MESA::Update($mesa);
-      }
+      $mesa = Mesa::GetById($pedido->getCodigoMesa());
+      $mesa -> set_estado(ESTADO::COMIENDO);
+      MESA::Update($mesa);
 
       $payload = json_encode(array("mensaje" => "Pedido modificado con exito"));
     } else {
