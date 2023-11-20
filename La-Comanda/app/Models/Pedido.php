@@ -1,10 +1,10 @@
 <?php 
 include_once './Interfaces/ICrudBase.php';
 
+
 class Pedido implements ICrudBase{
     public $id;
     public $codigo_pedido;
-    public $id_empleado;
     public $nroDocumento_Cliente;
     public $estado;
     public $tiempo_estimado_total;
@@ -12,9 +12,9 @@ class Pedido implements ICrudBase{
     public $fecha_finalizacion;
     public $codigo_mesa;
     public $foto;
-    public $id_producto;
-    public $cantidad;
     public $facturado;
+    public $precio_total;
+
     public function __construct() {
     }
     #region getter y setter
@@ -23,12 +23,6 @@ class Pedido implements ICrudBase{
     {
         return $this->id;
     }
-
-    public function getIdEmpleado()
-    {
-        return $this->id_empleado;
-    }
-
     public function getCodigoPedido()
     {
         return $this->codigo_pedido;
@@ -37,11 +31,6 @@ class Pedido implements ICrudBase{
     public function setCodigoPedido()
     {
         $this->codigo_pedido = self::generarCodigoPedidoUnico();
-    }
-
-    public function setIdEmpleado($idEmpleado)
-    {
-        $this->id_empleado = $idEmpleado;
     }
 
     public function getNroDocumentoCliente()
@@ -120,26 +109,6 @@ class Pedido implements ICrudBase{
         $this->foto = $foto;
     }
 
-    public function getIdProducto()
-    {
-        return $this->id_producto;
-    }
-
-    public function setIdProducto($idProducto)
-    {
-        $this->id_producto = $idProducto;
-    }
-
-    public function getCantidad()
-    {
-        return $this->cantidad;
-    }
-
-    public function setCantidad($cantidad)
-    {
-        $this->cantidad = $cantidad;
-    }
-
     public function getFacturado()
     {
         return $this->facturado;
@@ -149,6 +118,18 @@ class Pedido implements ICrudBase{
     {
         $this->facturado = $facturado;
     }
+
+    public function getPrecioTotal()
+    {
+        return $this->precio_total;
+    }
+
+    public function setPrecioTotal($precio_total)
+    {
+        $this->precio_total = $precio_total;
+    }
+
+
     #endregion
     public static function ValidarEstado($estado)
     {
@@ -157,6 +138,7 @@ class Pedido implements ICrudBase{
         }
         return true;
     }
+    
     public static function Create($obj){
         // $objAccesoDatos = DataAccess::getInstance();
         // $consulta = $objAccesoDatos->prepareQuery("INSERT INTO pedidos (codigo_pedido, id_empleado, nroDocumento_Cliente, estado, id_mesa, foto, id_producto, cantidad, facturado)
@@ -172,20 +154,18 @@ class Pedido implements ICrudBase{
         // $consulta->bindValue(':cantidad', $obj->getCantidad());
         // $consulta->bindValue(':facturado', $obj->getFacturado());
 
-//sin foto
+        //sin foto
         $objAccesoDatos = DataAccess::getInstance();
-        $consulta = $objAccesoDatos->prepareQuery("INSERT INTO pedidos (codigo_pedido, id_empleado, nroDocumento_Cliente, estado, tiempo_Estimado_Total, codigo_mesa, id_producto, cantidad, facturado)
-                                                                VALUES (:codigo_pedido, :idEmpleado, :nroDocumento_Cliente,:estado, :tiempo_Estimado_Total, :codigoMesa, :idProducto, :cantidad, :facturado)");
+        $consulta = $objAccesoDatos->prepareQuery("INSERT INTO pedidos (codigo_pedido, nroDocumento_Cliente, estado, tiempo_Estimado_Total, codigo_mesa, facturado, precio_total)
+                                                                VALUES (:codigo_pedido, :nroDocumento_Cliente,:estado, :tiempo_Estimado_Total, :codigoMesa, :facturado, :precio_total)");
         
-        $consulta->bindValue(':idEmpleado', $obj->getIdEmpleado(), PDO::PARAM_STR);
         $consulta->bindValue(':codigo_pedido', $obj->getCodigoPedido(), PDO::PARAM_STR);
         $consulta->bindValue(':nroDocumento_Cliente', $obj->getNroDocumentoCliente(), PDO::PARAM_INT);
         $consulta->bindValue(':estado', strtolower($obj->getEstado()));
         $consulta->bindValue(':tiempo_Estimado_Total', $obj-> getTiempoEstimadoTotal());
         $consulta->bindValue(':codigoMesa', $obj->getCodigoMesa());
-        $consulta->bindValue(':idProducto', $obj->getIdProducto());
-        $consulta->bindValue(':cantidad', $obj->getCantidad());
         $consulta->bindValue(':facturado', $obj->getFacturado());
+        $consulta->bindValue(':precio_total', $obj->getPrecioTotal());
 
         $consulta->execute();
     }
@@ -204,16 +184,14 @@ class Pedido implements ICrudBase{
     }
 
     public static function UpdateEstado($obj){
-        // si es 'en preparacion' agregarle el tiempo estimado de finalizacion
-
-        if($obj -> getEstado == Estado::PREPARACION){
+        // pendiente / en preparacion / listo para servir / entregado
+        if($obj -> getEstado() == Estado::PREPARACION){
 
             $objAccesoDato = DataAccess::getInstance();
 
-            $consulta = $objAccesoDato->prepareQuery("UPDATE Pedidos SET estado = :estado, tiempo_Estimado_Total = :tiempo_Estimado_Total, fecha_Comienzo= :fecha_Comienzo  WHERE id = :id");
+            $consulta = $objAccesoDato->prepareQuery("UPDATE Pedidos SET estado = :estado, fecha_Comienzo= :fecha_Comienzo  WHERE id = :id");
             $consulta->bindValue(':estado', strtolower($obj->getEstado()), PDO::PARAM_STR);
-            $consulta->bindValue(':tiempo_Estimado_Total', $obj->getTiempoEstimado());
-            $consulta->bindValue(':fecha_Comienzo', $obj->getFechaComienzo());
+            $consulta->bindValue(':fecha_Comienzo',date('Y-m-d H:i:s'));
             $consulta->bindValue(':id', $obj ->getId(), PDO::PARAM_INT);
 
         }else if($obj -> getEstado == Estado::LISTO){
@@ -221,36 +199,87 @@ class Pedido implements ICrudBase{
 
             $consulta = $objAccesoDato->prepareQuery("UPDATE Pedidos SET estado = :estado, fecha_Finalizacion = :fecha_Finalizacion WHERE id = :id");
             $consulta->bindValue(':estado', strtolower($obj->getSector()), PDO::PARAM_STR);
-            $consulta->bindValue(':fecha_Finalizacion', $obj->getFechaFinalizacion());
+            $consulta->bindValue(':fecha_Finalizacion', date('Y-m-d H:i:s'));
+            $consulta->bindValue(':id', $obj ->getId(), PDO::PARAM_INT);
+            
+        }else if($obj -> getEstado() == Estado::ENTREGADO){
+            $objAccesoDato = DataAccess::getInstance();
+
+            $consulta = $objAccesoDato->prepareQuery("UPDATE Pedidos SET estado = :estado WHERE id = :id");
+            $consulta->bindValue(':estado', strtolower($obj->getSector()), PDO::PARAM_STR);
             $consulta->bindValue(':id', $obj ->getId(), PDO::PARAM_INT);
         }
 
         $consulta->execute();
-        return $consulta->fetchAll(PDO::FETCH_CLASS, 'Producto');
+        return $consulta->fetchAll(PDO::FETCH_CLASS, 'Pedido');
     }
 
     public static function Delete($id){
         $objAccesoDatos = DataAccess::getInstance();
-        $consulta = $objAccesoDatos->prepareQuery("DELETE FROM Pedidos WHERE id= :id");
-        $consulta->bindValue(':id', $id, PDO::PARAM_INT);
+
+        $consulta = $objAccesoDatos->prepareQuery("DELETE FROM Pedidos_Productos WHERE codigo_pedido= :codigo_pedido");
+        $consulta->bindValue(':codigo_pedido', $id, PDO::PARAM_STR);
+        $consulta->execute();
+        
+        $consulta = $objAccesoDatos->prepareQuery("DELETE FROM Pedidos WHERE codigo_pedido= :codigo_pedido");
+        $consulta->bindValue(':codigo_pedido', $id, PDO::PARAM_STR);
 
         $consulta->execute();
         return $consulta->fetchAll(PDO::FETCH_CLASS, 'Pedido');
     }
 
     public static function GetAll(){
-        $objAccesoDatos = DataAccess::getInstance();
-        $consulta = $objAccesoDatos->prepareQuery("SELECT id, codigo_pedido ,id_empleado, nroDocumento_Cliente, estado, tiempo_estimado_total, fecha_comienzo,
-                                                            fecha_finalizacion, codigo_mesa, foto, id_producto, cantidad, facturado FROM Pedidos");
+        $arrRetornar = array();
 
+        //agarrar todos los pedidos
+        $objAccesoDatos = DataAccess::getInstance();
+        $consulta = $objAccesoDatos->prepareQuery("SELECT codigo_pedido , nroDocumento_Cliente, estado, tiempo_estimado_total, fecha_comienzo, fecha_finalizacion, codigo_mesa, foto, facturado, precio_total FROM pedidos");
         $consulta->execute();
-        return $consulta->fetchAll(PDO::FETCH_CLASS, 'Pedido');
+        $pedidosArr = $consulta->fetchAll(PDO::FETCH_CLASS,"Pedido");
+
+        foreach($pedidosArr as $pedido){
+            //agarrar todos los prodcutos de 1 pedido de la tabla intermedia, y sus estados
+            $objAccesoDatos = DataAccess::getInstance();
+            $consulta = $objAccesoDatos->prepareQuery("SELECT id_producto, producto_estado FROM pedidos_productos WHERE codigo_pedido = :codigo_pedido");
+            $consulta->bindValue(':codigo_pedido', $pedido->getCodigoPedido(), PDO::PARAM_STR);
+            $consulta->execute();
+            $pedidosProductosArr = $consulta->fetchAll(PDO::FETCH_CLASS,"PedidoProducto");
+
+            //agarar el procuto correspondiente
+            $productosArr= array();
+            foreach($pedidosProductosArr as $pedidoProductos){
+                $objAccesoDatos = DataAccess::getInstance();
+
+                $consulta = $objAccesoDatos->prepareQuery("SELECT id,sector, nombre, precio, tiempo_estimado FROM productos WHERE id = :id_producto");
+                $consulta->bindValue(':id_producto', $pedidoProductos->getIdProducto(), PDO::PARAM_INT);
+                $consulta->execute();
+                $producto = $consulta->fetch(PDO::FETCH_OBJ);
+
+                array_push($productosArr, $producto);
+            }
+
+            $obj =[  'codigo_pedido' => $pedido -> getCodigoPedido(),
+            'nroDocumento_Cliente' => $pedido ->getNroDocumentoCliente(),
+            'estado' => $pedido -> getEstado(),
+            'tiempo_estimado_total' => $pedido ->getTiempoEstimadoTotal(),
+            'fecha_comienzo' => $pedido -> getFechaComienzo(),
+            'fecha_finalizacion' => $pedido -> getFechaFinalizacion(),
+            'codigo_mesa' => $pedido -> getCodigoMesa(),
+            'facturado' => $pedido ->getFacturado(),
+            'precio_total' => $pedido ->getPrecioTotal(),
+            'productos'=> $productosArr,
+        ];
+
+        array_push($arrRetornar, $obj);
+        }
+
+        return $arrRetornar;
     }
     public static function GetById($id){
         $objAccesoDatos = DataAccess::getInstance();
-        $consulta = $objAccesoDatos->prepareQuery("SELECT id, codigo_pedido, id_empleado, nroDocumento_Cliente, estado, tiempo_estimado_total, fecha_comienzo,
-        fecha_finalizacion, codigo_mesa, foto, id_producto, cantidad, facturado FROM pedidos WHERE  AND id= :id");
-        $consulta->bindValue(':id', $id, PDO::PARAM_INT);
+        $consulta = $objAccesoDatos->prepareQuery("SELECT id, codigo_pedido, nroDocumento_Cliente, estado, tiempo_estimado_total, fecha_comienzo,
+        fecha_finalizacion, codigo_mesa, foto, facturado, precio_total FROM pedidos WHERE codigo_pedido= :codigo_pedido");
+        $consulta->bindValue(':codigo_pedido', $id, PDO::PARAM_INT);
         $consulta->execute();
 
         return $consulta->fetchObject('Pedido');
@@ -258,8 +287,8 @@ class Pedido implements ICrudBase{
 
     public static function GetByCodigoPedidoyMesa($codigoPedido, $codigoMesa){
         $objAccesoDatos = DataAccess::getInstance();
-        $consulta = $objAccesoDatos->prepareQuery("SELECT P.id, P.codigo_pedido, P.id_empleado, P.nroDocumento_Cliente, P.estado, P.tiempo_estimado_total, P.fecha_comienzo,
-        P.fecha_finalizacion, P.codigo_mesa, P.foto, P.id_producto, P.cantidad, P.facturado
+        $consulta = $objAccesoDatos->prepareQuery("SELECT P.id, P.codigo_pedido, P.nroDocumento_Cliente, P.estado, P.tiempo_estimado_total, P.fecha_comienzo,
+        P.fecha_finalizacion, P.codigo_mesa, P.foto, P.facturado, P.precio_total
         FROM Pedidos P
         INNER JOIN MESAS M
             ON M.Codigo_Mesa = :codigoMesa
@@ -295,16 +324,6 @@ class Pedido implements ICrudBase{
         throw new Exception('No se pudo generar un código de pedido único.');
     }
 
-    public static function MultiplicarTiempo($tiempoOriginal, $valorMultiplicador) {
-        list($horas, $minutos, $segundos) = explode(':', $tiempoOriginal);
-        $totalMinutos = $horas * 60 + $minutos;
-        $totalMinutosMultiplicados = $totalMinutos * $valorMultiplicador;
-        $nuevasHoras = floor($totalMinutosMultiplicados / 60);
-        $nuevosMinutos = $totalMinutosMultiplicados % 60;
-    
-        return sprintf("%02d:%02d:%02d", $nuevasHoras, $nuevosMinutos, $segundos);
-    }
-
     public static function CalcularMinutosPasados($horaInicio, $horaFin) {
         $horaInicio = strtotime($horaInicio);
         $horaFin = strtotime($horaFin);
@@ -319,5 +338,12 @@ class Pedido implements ICrudBase{
         
         return $tiempoPasado;
     }
+
+
+
+
+
+// SELECT * FROM pedidos_productos P 
+// left join productos Prod on P.ID = P.ID_PRODUCTO;
 }
 ?>

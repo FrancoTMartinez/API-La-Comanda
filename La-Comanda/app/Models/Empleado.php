@@ -5,6 +5,7 @@ class Empleado implements ICrudBase{
     public $id;
     public $rol;
     public $nombre;
+    public $clave;
     public $baja;
     public $fecha_alta;
     public $fecha_baja;
@@ -24,6 +25,14 @@ class Empleado implements ICrudBase{
 
     public function get_nombre() {
         return $this->nombre;
+    }
+
+    public function get_clave() {
+        return $this->clave;
+    }
+
+    public function set_clave($clave) {
+        $this->clave = $clave;
     }
 
     public function get_baja() {
@@ -47,7 +56,9 @@ class Empleado implements ICrudBase{
             exit();
         }
     }
-
+    public function set_id($id) {
+        $this->id = $id;
+    }
     public function set_nombre($nombre) {
         $this->nombre = $nombre;
     }
@@ -75,10 +86,11 @@ class Empleado implements ICrudBase{
 
     public static function Create($obj){
         $objAccesoDatos = DataAccess::getInstance();
-        $consulta = $objAccesoDatos->prepareQuery("INSERT INTO Empleados (rol, nombre, baja, fecha_alta) VALUES (:rol, :nombre, :baja, :fecha_alta)");
+        $consulta = $objAccesoDatos->prepareQuery("INSERT INTO Empleados (rol, nombre, clave, baja, fecha_alta) VALUES (:rol, :nombre, :clave, :baja, :fecha_alta)");
 
         $consulta->bindValue(':rol', strtolower($obj->rol), PDO::PARAM_STR);
         $consulta->bindValue(':nombre', $obj->nombre, PDO::PARAM_STR);
+        $consulta->bindValue(':clave', $obj->clave, PDO::PARAM_STR);
         $consulta->bindValue(':baja', $obj->baja, PDO::PARAM_BOOL);
         $consulta->bindValue(':fecha_alta', $obj->fecha_alta);
         $consulta->execute();
@@ -108,7 +120,7 @@ class Empleado implements ICrudBase{
 
     public static function GetAll(){
         $objAccesoDatos = DataAccess::getInstance();
-        $consulta = $objAccesoDatos->prepareQuery("SELECT id, rol, nombre, baja, fecha_alta, fecha_baja FROM Empleados");
+        $consulta = $objAccesoDatos->prepareQuery("SELECT id, rol, nombre, clave, baja, fecha_alta, fecha_baja FROM Empleados");
 
         $consulta->execute();
         return $consulta->fetchAll(PDO::FETCH_CLASS, 'Empleado');
@@ -124,8 +136,18 @@ class Empleado implements ICrudBase{
 
     public static function GetById($id){
         $objAccesoDatos = DataAccess::getInstance();
-        $consulta = $objAccesoDatos->prepareQuery("SELECT id, rol, nombre, baja, fecha_alta, fecha_baja FROM Empleados WHERE id = :id");
+        $consulta = $objAccesoDatos->prepareQuery("SELECT id, rol, nombre, clave, baja, fecha_alta, fecha_baja FROM Empleados WHERE id = :id");
         $consulta->bindValue(':id', $id, PDO::PARAM_INT);
+        $consulta->execute();
+
+        return $consulta->fetchObject('Empleado');
+    }
+
+    public static function GetByNombreClave($nombre, $clave){
+        $objAccesoDatos = DataAccess::getInstance();
+        $consulta = $objAccesoDatos->prepareQuery("SELECT id, rol, nombre, clave, baja, fecha_alta, fecha_baja FROM Empleados WHERE nombre = :nombre AND clave= :clave");
+        $consulta->bindValue(':nombre', $nombre, PDO::PARAM_STR);
+        $consulta->bindValue(':clave', $clave, PDO::PARAM_STR);
         $consulta->execute();
 
         return $consulta->fetchObject('Empleado');

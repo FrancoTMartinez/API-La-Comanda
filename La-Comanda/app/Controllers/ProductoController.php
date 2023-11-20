@@ -12,7 +12,7 @@ class ProductoController extends Producto
     $tiempoEstimado = $parametros['tiempoEstimado'];
 
     $producto = new Producto();
-    $producto->setSector(strtolower($sector));
+    $producto->setSector($sector);
     $producto->setNombre($nombre);
     $producto->setPrecio($precio);
     $producto->setTiempoEstimado($tiempoEstimado);

@@ -25,7 +25,7 @@ class Producto implements ICrudBase{
             $this->sector = $sector;
         }else{
             http_response_code(400);
-            echo 'Sector no valido. (barra de tragos y vinos / barra de choperas / la cocina / Candy Bar)';
+            echo 'Sector no valido. (Vinoteca / Cerveceria/ Cocina/ CandyBar)';
             exit();
         }
     }
@@ -59,10 +59,29 @@ class Producto implements ICrudBase{
 
     public static function ValidarSector($sector)
     {
-        if ($sector != 'barra de tragos y vinos' && $sector != 'barra de choperas' && $sector != 'la cocina' && $sector != 'Candy Bar') {
+        if ($sector != 'Vinoteca' && $sector != 'Cerveceria' && $sector != 'Cocina' && $sector != 'CandyBar') {
             return false;
         }
         return true;
+    }
+
+    public function ValidarSectorRol($rol){
+
+        if($this -> getSector() == "Vinoteca" && $rol == "Bartender"){
+            return true;
+
+        }else if($this -> getSector() == "Cerveceria" && $rol == "Cervecero"){
+            return true;
+
+        }else if($this -> getSector() == "Cocinero" && $rol == "Cocina"){
+            return true;
+
+        }else if($this -> getSector() == "Candybar" && $rol == "CandyBar"){
+            return true;
+            
+        }else{
+            return false;
+        }
     }
 
     public static function Create($obj){

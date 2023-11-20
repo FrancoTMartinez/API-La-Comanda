@@ -14,10 +14,10 @@ use Slim\Cookie\Cookie;
 require __DIR__ . '/../vendor/autoload.php';
 
 require_once './db/DataAccess.php';
-// require_once './middlewares/AutentificadorJWT.php';
-// require_once './middlewares/Autentificador.php';
-// require_once './middlewares/Validador.php';
-// require_once './middlewares/Logger.php';
+
+require_once './Middlewares/AutentificadorJWT.php';
+require_once './Middlewares/MWToken.php';
+require_once './Middlewares/MWSocios.php';
 
 require_once './controllers/EmpleadoController.php';
 require_once './controllers/MesaController.php';
@@ -50,15 +50,17 @@ $app->group('/empleado', function (RouteCollectorProxy $group) {
   $group->delete('/{id}', \EmpleadoController::class . '::BorrarUno');
   $group->get('[/]', \EmpleadoController::class . '::TraerTodos');
   $group->get('/{id}', \EmpleadoController::class . '::TraerUno');
-});
+  $group->post('/importar', \EmpleadoController::class . '::Importar');
+  $group->get('/exportar/empleados', \EmpleadoController::class . '::Exportar');
+})->add(new MWToken()) ->add(new MWSocios);
 
 $app->group('/mesa', function (RouteCollectorProxy $group) {
-  $group->post('[/]', \MesaController::class . '::CargarUno');
+  $group->post('[/]', \MesaController::class . '::CargarUno')-> add(new MWSocios());
   $group->put('/{codigo_mesa}', \MesaController::class . '::ModificarUno');
   $group->delete('/{codigo_mesa}', \MesaController::class . '::BorrarUno');
   $group->get('[/]', \MesaController::class . '::TraerTodos');
   $group->get('/{codigo_mesa}', \MesaController::class . '::TraerUno');
-});
+})->add(new MWToken());
 
 $app->group('/producto', function (RouteCollectorProxy $group) {
   $group->post('[/]', \ProductoController::class . '::CargarUno');
@@ -66,20 +68,20 @@ $app->group('/producto', function (RouteCollectorProxy $group) {
   $group->delete('/{id}', \ProductoController::class . '::BorrarUno');
   $group->get('[/]', \ProductoController::class . '::TraerTodos');
   $group->get('/{id}', \ProductoController::class . '::TraerUno');
-});
+})->add(new MWToken()) ->add(new MWSocios);
 
 $app->group('/pedido', function (RouteCollectorProxy $group) {
   $group->post('[/]', \PedidoController::class . '::CargarUno');
-  $group->put('/{id}', \PedidoController::class . '::ModificarUno');
-  $group->delete('/{id}', \PedidoController::class . '::BorrarUno');
+  $group->put('/{codigo_pedido}', \PedidoController::class . '::ModificarUno');
+  $group->delete('/{codigo_pedido}', \PedidoController::class . '::BorrarUno');
   $group->get('[/]', \PedidoController::class . '::TraerTodos');
   $group->get('/{codigoPedido}/{codigoMesa}', \PedidoController::class . '::TraerUno');
+})->add(new MWToken()) ;
+
+$app->group('/login', function (RouteCollectorProxy $group) {
+  $group->post('[/]', \EmpleadoController::class . '::LogIn');
 });
 
-$app->get('[/]', function (Request $request, Response $response) {
-  $payload = json_encode(array('method' => 'GET', 'msg' => "Bienvenido a SlimFramework 2023"));
-  $response->getBody()->write($payload);
-  return $response->withHeader('Content-Type', 'application/json');
-});
+
 
 $app->run();

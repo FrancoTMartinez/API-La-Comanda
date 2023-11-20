@@ -44,7 +44,7 @@ class Mesa implements ICrudBase{
 
     public static function ValidarEstado($estado)
     {
-        if ($estado != Estado::ESPERANDO && $estado != Estado::COMIENDO && $estado != Estado::PAGANDO && $estado != Estado::CERRADA && $estado != Estado::VACIA) {
+        if ($estado != Estado::ESPERANDO && $estado != Estado::COMIENDO && $estado != Estado::PAGANDO && $estado != Estado::CERRADA) {
             return false;
         }
         return true;

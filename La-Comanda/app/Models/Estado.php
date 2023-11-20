@@ -2,7 +2,6 @@
 
     class Estado
     {
-        const VACIA = 'vacia';
         const ESPERANDO = 'Con cliente esperando pedido';
         const COMIENDO = 'Con cliente comiendo';
         const PAGANDO = 'Con cliente pagando';
@@ -15,3 +14,4 @@
         const ENTREGADO = 'entregado';
     }
 ?>
+
