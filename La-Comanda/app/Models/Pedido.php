@@ -358,4 +358,35 @@ class Pedido implements ICrudBase
 
         return intval($minutos_restantes);
     }
+
+    public static function GetAllPendientesByRol($rol, $idEmpleado)
+    {
+        $sector = '';
+
+        if($rol == "bartender"){
+            $sector = "vinoteca";
+        }else if($rol == "cervecero"){
+            $sector = "cerveceria";
+        }else if($rol == "cocinero"){
+            $sector = "cocina";
+        }else if($rol == "candyBar"){
+            $sector = "candybar";
+        }
+
+        $objAccesoDatos = DataAccess::getInstance();
+        $consulta = $objAccesoDatos->prepareQuery("SELECT codigo_pedido, id_producto, producto_estado, id_empleado,
+                                                        Prod.Id, Prod.Sector, Prod.Nombre, Prod.Nombre, Prod.Precio,
+                                                        Prod.Tiempo_estimado  FROM pedidos_productos PD 
+                                                    LEFT JOIN Productos Prod ON prod.id= pd.id_producto
+                                                    WHERE PD.producto_estado = 'pendiente'
+                                                    AND pd.id_empleado = :id_empleado
+                                                    AND PROD.SECTOR = :sector");
+
+        $consulta->bindValue(':id_empleado', $idEmpleado, PDO::PARAM_INT);
+        $consulta->bindValue(':sector', $sector, PDO::PARAM_STR);
+        $consulta->execute();
+        $arrDevuelto = $consulta->fetchAll(PDO::FETCH_OBJ);
+
+        return $arrDevuelto;
+    }
 }

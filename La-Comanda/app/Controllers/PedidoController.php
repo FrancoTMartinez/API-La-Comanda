@@ -93,9 +93,9 @@ class PedidoController extends Pedido
 
         $minutosRestantes = Pedido::CalcularMinutosPasados(substr($pedido->getFechaComienzo(), 11, 8), $pedido->getTiempoEstimadoTotal());
 
-        if($minutosRestantes > 0){
+        if ($minutosRestantes > 0) {
           $payload = json_encode("El tiempo restante para su pedido es de " . $minutosRestantes . " minutos.");
-        }else{
+        } else {
           $payload = json_encode("Su pedido ya deberia estar listo.");
         }
       } else if ($pedido->getEstado() == Estado::PENDIENTE) {
@@ -136,26 +136,25 @@ class PedidoController extends Pedido
       $pedidoProducto = PedidoProducto::GetByCodigoPedidoIdProducto($codigo_pedido, $id_producto);
 
       //valido que el que va a tomar el pedido no este dado de baja y sea de ese sector
-      if(!$empleado ->get_baja()){
+      if (!$empleado->get_baja()) {
         $producto = Producto::GetById($id_producto);
 
-        if(!$producto-> ValidarSectorRol($empleado -> get_rol())){
-          $payload = json_encode(array("mensaje" => "El empleado que intenta tomar esete pedido es de un sector distinto al producto. El sector del empleado es: " .$empleado -> get_rol() . " y el sector del producto es: " . $producto-> getSector()));
+        if (!$producto->ValidarSectorRol($empleado->get_rol())) {
+          $payload = json_encode(array("mensaje" => "El empleado que intenta tomar esete pedido es de un sector distinto al producto. El sector del empleado es: " . $empleado->get_rol() . " y el sector del producto es: " . $producto->getSector()));
           $response->getBody()->write($payload);
           return $response
             ->withHeader('Content-Type', 'application/json');
         }
-
-      }else{
+      } else {
         var_dump($empleado);
-        $payload = json_encode(array("mensaje" => "El empleado que intenta tomar el pedido esta dado de baja. En la fecha: ". $empleado->get_fecha_baja()));
+        $payload = json_encode(array("mensaje" => "El empleado que intenta tomar el pedido esta dado de baja. En la fecha: " . $empleado->get_fecha_baja()));
         $response->getBody()->write($payload);
         return $response
           ->withHeader('Content-Type', 'application/json');
       }
 
       //solo el mozo puede modificar el estado de la mesa
-      if ($estado == Estado::ENTREGADO && $empleado -> get_rol() != "mozo") {
+      if ($estado == Estado::ENTREGADO && $empleado->get_rol() != "mozo") {
         $payload = json_encode(array("mensaje" => "El estado del pedido Entregado solo puede ser cambiado por el mozo."));
 
         $response->getBody()->write($payload);
@@ -168,11 +167,11 @@ class PedidoController extends Pedido
 
       PedidoProducto::Update($pedidoProducto);
 
-      $pedido -> setEstado($estado);
+      $pedido->setEstado($estado);
       Pedido::UpdateEstado($pedido);
 
       $mesa = Mesa::GetById($pedido->getCodigoMesa());
-      $mesa -> set_estado(ESTADO::COMIENDO);
+      $mesa->set_estado(ESTADO::COMIENDO);
       MESA::Update($mesa);
 
       $payload = json_encode(array("mensaje" => "Pedido modificado con exito"));
@@ -194,7 +193,7 @@ class PedidoController extends Pedido
       Pedido::Delete($codigo_pedido);
 
       $mesa = Mesa::GetById($pedido->getCodigoMesa());
-      $mesa -> set_estado(ESTADO::CERRADA);
+      $mesa->set_estado(ESTADO::CERRADA);
       Mesa::Update($mesa);
       $payload = json_encode(array("mensaje" => "Pedido borrado con exito"));
     } else {
@@ -204,5 +203,23 @@ class PedidoController extends Pedido
     $response->getBody()->write($payload);
     return $response
       ->withHeader('Content-Type', 'application/json');
+  }
+
+  public static function TraerPedidosPendientes($request, $response, $args)
+  {
+    $header = $request->getHeaderLine(("Authorization"));
+    $token = trim(explode("Bearer", $header)[1]);
+    $data = AutentificadorJWT::ObtenerData($token);
+
+    if($data -> rol == 'socio'){
+      $lista = Pedido::GetAll();
+      $payload = json_encode(array("listaPedidos" => $lista));
+    }else{
+      $lista = Pedido::GetAllPendientesByRol($data -> rol, $data -> id);
+      $payload = json_encode(array("listaPedidosPendientes" => $lista));
+    }
+
+    $response->getBody()->write($payload);
+    return $response->withHeader('Content-Type', 'application/json');
   }
 }

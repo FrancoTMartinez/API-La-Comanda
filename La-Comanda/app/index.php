@@ -76,6 +76,7 @@ $app->group('/pedido', function (RouteCollectorProxy $group) {
   $group->delete('/{codigo_pedido}', \PedidoController::class . '::BorrarUno');
   $group->get('[/]', \PedidoController::class . '::TraerTodos');
   $group->get('/{codigoPedido}/{codigoMesa}', \PedidoController::class . '::TraerUno');
+  $group->get('/pendientes', \PedidoController::class . '::TraerPedidosPendientes');
 })->add(new MWToken()) ;
 
 $app->group('/login', function (RouteCollectorProxy $group) {
