@@ -3,6 +3,7 @@
         "slim/slim": "^4.12",
         "slim/psr7": "^1.6",
         "vlucas/phpdotenv": "^5.5",
-        "firebase/php-jwt": "4.0"
+        "firebase/php-jwt": "4.0",
+        "fpdf/fpdf": "^1.83"
     }
 }

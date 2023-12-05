@@ -33,14 +33,15 @@ SET time_zone = "+00:00";
         TIEMPO_ESTIMADO TIME
     );
 
-    /*-- Tabla Facturaciones --*/
-    CREATE TABLE Facturaciones(
-    ID INT AUTO_INCREMENT PRIMARY KEY,
-    ID_MESA INT NOT NULL,
-    FECHA DATE NOT NULL,
-    DETALLE VARCHAR(150),
-    TOTAL DECIMAL(10,2) NOT NULL,
-    FOREIGN KEY (ID_MESA) REFERENCES Mesas(ID)
+        /*-- Tabla Facturaciones --*/
+ CREATE TABLE Facturas(
+        ID INT AUTO_INCREMENT PRIMARY KEY,
+        CODIGO_MESA VARCHAR(5) NOT NULL,
+        CODIGO_PEDIDO VARCHAR(5) NOT NULL,
+        FECHA DATE NOT NULL,
+        TOTAL DECIMAL(10,2) NOT NULL,
+        FOREIGN KEY (CODIGO_MESA) REFERENCES Mesas(CODIGO_MESA),
+        FOREIGN KEY (CODIGO_PEDIDO) REFERENCES Pedidos(CODIGO_PEDIDO)
     );
 
 
@@ -68,5 +69,22 @@ SET time_zone = "+00:00";
         PRODUCTO_ESTADO varchar(30) NOT NULL,
         ID_EMPLEADO INT NULL,
         FOREIGN KEY (ID_PRODUCTO) REFERENCES Productos(ID),
+        FOREIGN KEY (CODIGO_PEDIDO) REFERENCES PEDIDOS(CODIGO_PEDIDO)
+    )
+
+        public $id;
+    public $codigo_pedido;
+    public $puntuacion_mozo;
+    public $puntuacion_comida;
+    public $comentario;
+    public $fecha;
+
+    CREATE TABLE Encuestas(
+        ID INT AUTO_INCREMENT PRIMARY KEY,
+        CODIGO_PEDIDO varchar(5) NOT NULL,
+        PUNTUACION_MOZO INT NOT NULL,
+        PUNTUACION_COMIDA INT NOT NULL,
+        COMENTARIO VARCHAR(66) NOT NULL,
+        FECHA DATE NOT NULL,
         FOREIGN KEY (CODIGO_PEDIDO) REFERENCES PEDIDOS(CODIGO_PEDIDO)
     )

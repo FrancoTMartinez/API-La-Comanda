@@ -1,8 +1,8 @@
 <?php
 include_once './Interfaces/ICrudBase.php';
+include_once './Models/Producto.php';
 
-
-class Pedido implements ICrudBase
+class Pedido
 {
     public $id;
     public $codigo_pedido;
@@ -173,18 +173,15 @@ class Pedido implements ICrudBase
         $consulta->execute();
     }
 
-    public static function Update($obj)
+    public static function UpdateFacturado($obj)
     {
-        // $objAccesoDato = DataAccess::getInstance();
-        // $consulta = $objAccesoDato->prepareQuery("UPDATE Pedidos SET estado = :estado, nombre= :nombre, precio= :precio, tiempo_estimado= :tiempo_estimado WHERE id = :id");
-        // $consulta->bindValue(':estado', strtolower($obj->getEstado()), PDO::PARAM_STR);
-        // $consulta->bindValue(':tiempo_Estimado_Total', $obj->getTiempoEstimado());
-        // $consulta->bindValue(':fecha_Comienzo', $obj->getFechaComienzo());
-        // $consulta->bindValue(':fecha_Finalizacion', $obj->getFechaFinalizacion());
-        // $consulta->bindValue(':id', $obj ->getId(), PDO::PARAM_INT);
+        $objAccesoDato = DataAccess::getInstance();
+        $consulta = $objAccesoDato->prepareQuery("UPDATE Pedidos SET facturado=:facturado WHERE codigo_pedido = :codigo_pedido");
+        $consulta->bindValue(':facturado', $obj->getFacturado());
+        $consulta->bindValue(':codigo_pedido', $obj->getCodigoPedido(), PDO::PARAM_STR);
 
-        // $consulta->execute();
-        // return $consulta->fetchAll(PDO::FETCH_CLASS, 'Producto');
+        $consulta->execute();
+        return $consulta->fetchAll(PDO::FETCH_CLASS, 'Producto');
     }
 
     public static function UpdateEstado($obj)
@@ -258,20 +255,29 @@ class Pedido implements ICrudBase
             //agarar el procuto correspondiente
             $productosArr = array();
             foreach ($pedidosProductosArr as $pedidoProductos) {
+
                 $objAccesoDatos = DataAccess::getInstance();
 
                 $consulta = $objAccesoDatos->prepareQuery("SELECT id,sector, nombre, precio, tiempo_estimado FROM productos WHERE id = :id_producto");
                 $consulta->bindValue(':id_producto', $pedidoProductos->getIdProducto(), PDO::PARAM_INT);
                 $consulta->execute();
-                $producto = $consulta->fetch(PDO::FETCH_OBJ);
+                $producto = $consulta->fetchObject('Producto');
 
-                array_push($productosArr, $producto);
+                $productoJson = [
+                    'id' => $producto->getId(),
+                    'sector' => $producto->getSector(),
+                    'nombre' => $producto->getNombre(),
+                    'precio' => $producto->getPrecio(),
+                    'tiempo_estimado' => $producto->getTiempoEstimado(),
+                    'estado' => $pedidoProductos->getProductoEstado()
+                ];
+
+                array_push($productosArr, $productoJson);
             }
 
             $obj = [
                 'codigo_pedido' => $pedido->getCodigoPedido(),
                 'nroDocumento_Cliente' => $pedido->getNroDocumentoCliente(),
-                'estado' => $pedido->getEstado(),
                 'tiempo_estimado_total' => $pedido->getTiempoEstimadoTotal(),
                 'fecha_comienzo' => $pedido->getFechaComienzo(),
                 'fecha_finalizacion' => $pedido->getFechaFinalizacion(),
@@ -286,6 +292,44 @@ class Pedido implements ICrudBase
 
         return $arrRetornar;
     }
+
+    public static function GetProductosByCodigoPedido($codigo_pedido)
+    {
+        $arrRetornar = array();
+
+        //agarrar todos los prodcutos de 1 pedido de la tabla intermedia, y sus estados
+        $objAccesoDatos = DataAccess::getInstance();
+        $consulta = $objAccesoDatos->prepareQuery("SELECT id_producto, producto_estado FROM pedidos_productos WHERE codigo_pedido = :codigo_pedido");
+        $consulta->bindValue(':codigo_pedido', $codigo_pedido, PDO::PARAM_STR);
+        $consulta->execute();
+        $pedidosProductosArr = $consulta->fetchAll(PDO::FETCH_CLASS, "PedidoProducto");
+
+        //agarar el procuto correspondiente
+        $productosArr = array();
+        foreach ($pedidosProductosArr as $pedidoProductos) {
+
+            $objAccesoDatos = DataAccess::getInstance();
+
+            $consulta = $objAccesoDatos->prepareQuery("SELECT id,sector, nombre, precio, tiempo_estimado FROM productos WHERE id = :id_producto");
+            $consulta->bindValue(':id_producto', $pedidoProductos->getIdProducto(), PDO::PARAM_INT);
+            $consulta->execute();
+            $producto = $consulta->fetchObject('Producto');
+
+            $productoJson = [
+                'id' => $producto->getId(),
+                'sector' => $producto->getSector(),
+                'nombre' => $producto->getNombre(),
+                'precio' => $producto->getPrecio(),
+                'tiempo_estimado' => $producto->getTiempoEstimado(),
+                'estado' => $pedidoProductos->getProductoEstado()
+            ];
+
+            array_push($productosArr, $productoJson);
+        }
+
+        return $productosArr;
+    }
+
     public static function GetById($id)
     {
         $objAccesoDatos = DataAccess::getInstance();
@@ -359,31 +403,48 @@ class Pedido implements ICrudBase
         return intval($minutos_restantes);
     }
 
-    public static function GetAllPendientesByRol($rol, $idEmpleado)
+    public static function GetAllPendientesByRol($rol)
     {
         $sector = '';
 
-        if($rol == "bartender"){
+        if ($rol == "bartender") {
             $sector = "vinoteca";
-        }else if($rol == "cervecero"){
+        } else if ($rol == "cervecero") {
             $sector = "cerveceria";
-        }else if($rol == "cocinero"){
+        } else if ($rol == "cocinero") {
             $sector = "cocina";
-        }else if($rol == "candyBar"){
+        } else if ($rol == "candyBar") {
             $sector = "candybar";
         }
 
+        var_dump($rol);
         $objAccesoDatos = DataAccess::getInstance();
         $consulta = $objAccesoDatos->prepareQuery("SELECT codigo_pedido, id_producto, producto_estado, id_empleado,
                                                         Prod.Id, Prod.Sector, Prod.Nombre, Prod.Nombre, Prod.Precio,
                                                         Prod.Tiempo_estimado  FROM pedidos_productos PD 
                                                     LEFT JOIN Productos Prod ON prod.id= pd.id_producto
                                                     WHERE PD.producto_estado = 'pendiente'
-                                                    AND pd.id_empleado = :id_empleado
                                                     AND PROD.SECTOR = :sector");
 
-        $consulta->bindValue(':id_empleado', $idEmpleado, PDO::PARAM_INT);
         $consulta->bindValue(':sector', $sector, PDO::PARAM_STR);
+        $consulta->execute();
+        $arrDevuelto = $consulta->fetchAll(PDO::FETCH_OBJ);
+
+        return $arrDevuelto;
+    }
+
+    public static function GetAllByEstado($estado)
+    {
+
+
+        $objAccesoDatos = DataAccess::getInstance();
+        $consulta = $objAccesoDatos->prepareQuery("SELECT codigo_pedido, id_producto, producto_estado, id_empleado,
+                                                        Prod.Id, Prod.Sector, Prod.Nombre, Prod.Nombre, Prod.Precio,
+                                                        Prod.Tiempo_estimado  FROM pedidos_productos PD 
+                                                    LEFT JOIN Productos Prod ON prod.id= pd.id_producto
+                                                    WHERE PD.producto_estado = :estado");
+
+        $consulta->bindValue(':estado', $estado, PDO::PARAM_STR);
         $consulta->execute();
         $arrDevuelto = $consulta->fetchAll(PDO::FETCH_OBJ);
 

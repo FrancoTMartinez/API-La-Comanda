@@ -1,8 +1,9 @@
 id,rol,nombre,clave,baja,fecha_alta,fecha_baja
-3,bartender,Patricio,,1,2023-11-02,2023-11-02
+3,bartender,Patricio,patricio123,1,2023-11-02,2023-11-02
 7,socio,Franco,franco123,0,2023-11-03,
-8,cocinero,Pablo,,0,2023-11-19,
-9,mozo,Lucas,,0,2023-11-19,
+8,cocinero,Pablo,pablo123,0,2023-11-19,
+9,cervecero,Lucas,lucas123,0,2023-11-19,
 10,mozo,Morfeo,morfeo123,0,2023-11-19,
 11,socio,Usuario1,clave123,0,2023-11-01,
-12,mozo,Usuario2,clave456,0,2023-11-01,
+12,mozo,Usuario2,clave456,1,2023-11-01,2023-11-27
+14,mozo,mauro,mauro123,0,2023-11-27,

@@ -95,6 +95,14 @@ class Mesa implements ICrudBase{
         return $consulta->fetchObject('Mesa');
     }
 
+    public static function GetUsosMesas(){
+        $objAccesoDatos = DataAccess::getInstance();
+        $consulta = $objAccesoDatos->prepareQuery("SELECT codigo_mesa, COUNT(*) as cantidad_pedidos FROM pedidos GROUP BY CODIGO_MESA");
+        $consulta->execute();
+
+        return $consulta->fetchAll(PDO::FETCH_ASSOC);
+    }
+
     public function generarCodigoMesaUnico($longitud = 5) {
         $caracteres = '0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz';
         $codigoMesa = '';

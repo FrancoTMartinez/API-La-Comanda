@@ -87,6 +87,7 @@ class PedidoController extends Pedido
     $pedido = Pedido::GetByCodigoPedidoyMesa($codigo_pedido, $codigo_mesa);
 
     if ($pedido === false) {
+
       $payload = json_encode("Pedido no encontrado.");
     } else {
       if ($pedido->getEstado() == Estado::PREPARACION) {
@@ -100,8 +101,33 @@ class PedidoController extends Pedido
         }
       } else if ($pedido->getEstado() == Estado::PENDIENTE) {
         $payload = json_encode("El pedido se encuentra en el estado pendiente, una vez que el estado cambie a EN PREPARACION, podra ver el tiempo estimado restante.");
-      } else {
+      } else if ($pedido->getEstado() == Estado::ENTREGADO) {
+        $payload = json_encode("El pedido se encuentra entregado.");
+      }else {
         $payload = json_encode("El pedido no tiene el estado correspondiente para ver el tiempo restante de entrega.");
+      }
+    }
+
+    $response->getBody()->write($payload);
+    return $response
+      ->withHeader('Content-Type', 'application/json');
+  }
+
+  public static function TraerUnoCodigoPedido($request, $response, $args)
+  {
+    $codigo_pedido = $args['codigoPedido'];
+
+    $pedido = Pedido::GetById($codigo_pedido);
+
+    if ($pedido === false) {
+      $payload = json_encode("Pedido no encontrado.");
+    } else {
+      $minutosRestantes = Pedido::CalcularMinutosPasados(substr($pedido->getFechaComienzo(), 11, 8), $pedido->getTiempoEstimadoTotal());
+      $arrProductos = Pedido::GetProductosByCodigoPedido($codigo_pedido);
+      if ($minutosRestantes > 0) {
+        $payload = json_encode(array('pedido' => $pedido,'productos' => $arrProductos,'tiempo' => "El tiempo restante para su pedido es de " . $minutosRestantes . " minutos."));
+      } else {
+        $payload = json_encode(array('pedido' => $pedido, 'productos' => $arrProductos));
       }
     }
 
@@ -126,15 +152,25 @@ class PedidoController extends Pedido
 
     $codigo_pedido = $args['codigo_pedido'];
     $id_producto = $parametros['id_producto'];
-    $id_empleado = $parametros['id_empleado'];
+    // $id_empleado = $parametros['id_empleado'];
     $estado = $parametros['estado'];
 
+    $header = $request->getHeaderLine(("Authorization"));
+    $token = trim(explode("Bearer", $header)[1]);
+    $data = AutentificadorJWT::ObtenerData($token);
+
     $pedido = Pedido::GetById($codigo_pedido);
-    $empleado = Empleado::GetById($id_empleado);
+    $empleado = Empleado::GetById($data->id);
     if ($pedido != false) {
 
       $pedidoProducto = PedidoProducto::GetByCodigoPedidoIdProducto($codigo_pedido, $id_producto);
 
+      if (!$pedidoProducto) {
+        $payload = json_encode(array("mensaje" => "No se encontro la combinacion de pedido producto que se envio. Verifque que este bien el codigo del producto y el id del producto."));
+        $response->getBody()->write($payload);
+        return $response
+          ->withHeader('Content-Type', 'application/json');
+      }
       //valido que el que va a tomar el pedido no este dado de baja y sea de ese sector
       if (!$empleado->get_baja()) {
         $producto = Producto::GetById($id_producto);
@@ -146,7 +182,6 @@ class PedidoController extends Pedido
             ->withHeader('Content-Type', 'application/json');
         }
       } else {
-        var_dump($empleado);
         $payload = json_encode(array("mensaje" => "El empleado que intenta tomar el pedido esta dado de baja. En la fecha: " . $empleado->get_fecha_baja()));
         $response->getBody()->write($payload);
         return $response
@@ -161,8 +196,7 @@ class PedidoController extends Pedido
         return $response
           ->withHeader('Content-Type', 'application/json');
       }
-
-      $pedidoProducto->setIdEmpleado($id_empleado);
+      $pedidoProducto->setIdEmpleado($data->id);
       $pedidoProducto->setProductoEstado($estado);
 
       PedidoProducto::Update($pedidoProducto);
@@ -211,14 +245,32 @@ class PedidoController extends Pedido
     $token = trim(explode("Bearer", $header)[1]);
     $data = AutentificadorJWT::ObtenerData($token);
 
-    if($data -> rol == 'socio'){
+    if ($data->rol == 'socio') {
       $lista = Pedido::GetAll();
       $payload = json_encode(array("listaPedidos" => $lista));
-    }else{
-      $lista = Pedido::GetAllPendientesByRol($data -> rol, $data -> id);
+    } else if ($data->rol == 'mozo') {
+      $payload = json_encode("El mozo no puede ver los pedidos pendientes.");
+    } else {
+      $lista = Pedido::GetAllPendientesByRol($data->rol, $data->id);
       $payload = json_encode(array("listaPedidosPendientes" => $lista));
     }
 
+    $response->getBody()->write($payload);
+    return $response->withHeader('Content-Type', 'application/json');
+  }
+
+  public static function TraerPedidosPorEstado($request, $response, $args)
+  {
+    $header = $request->getHeaderLine(("Authorization"));
+    $token = trim(explode("Bearer", $header)[1]);
+    $data = AutentificadorJWT::ObtenerData($token);
+
+    if ($data->rol == "mozo") {
+      $lista = Pedido::GetAllByEstado(Estado::LISTO);
+      $payload = json_encode(array($lista));
+    } else {
+      $payload = json_encode("Accion reservada solo para mozo.");
+    }
     $response->getBody()->write($payload);
     return $response->withHeader('Content-Type', 'application/json');
   }

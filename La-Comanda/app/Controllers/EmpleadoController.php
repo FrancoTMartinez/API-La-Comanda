@@ -125,30 +125,36 @@ class EmpleadoController extends Empleado
   {
     $archivo = $_FILES['archivo']['tmp_name'];
 
-    $lineas = file($archivo, FILE_IGNORE_NEW_LINES | FILE_SKIP_EMPTY_LINES);
-    $primerLinea = true;
-    // Iterar sobre las líneas del archivo
-    foreach ($lineas as $linea) {
-      if (!$primerLinea) {
-        // Dividir la línea en columnas usando explode
-        $columnas = explode(',', $linea);
-
-        $empleado = new Empleado();
-        $empleado->set_rol(strtoupper($columnas[0]));
-        $empleado->set_nombre($columnas[1]);
-        $empleado->set_clave($columnas[2]);
-        $empleado->set_baja($columnas[3]);
-        $empleado->set_fecha_alta($columnas[4]);
-        $empleado->set_fecha_baja($columnas[5]);
-
-        var_dump($empleado);
-        Empleado::create($empleado);
+    if($archivo){
+      $lineas = file($archivo, FILE_IGNORE_NEW_LINES | FILE_SKIP_EMPTY_LINES);
+      $primerLinea = true;
+      // Iterar sobre las líneas del archivo
+      foreach ($lineas as $linea) {
+        if (!$primerLinea) {
+          // Dividir la línea en columnas usando explode
+          $columnas = explode(',', $linea);
+  
+          $empleado = new Empleado();
+          $empleado->set_rol(strtoupper($columnas[0]));
+          $empleado->set_nombre($columnas[1]);
+          $empleado->set_clave($columnas[2]);
+          $empleado->set_baja($columnas[3]);
+          $empleado->set_fecha_alta($columnas[4]);
+          $empleado->set_fecha_baja($columnas[5]);
+  
+          var_dump($empleado);
+          Empleado::create($empleado);
+        }
+        $primerLinea = false;
       }
-      $primerLinea = false;
+  
+      $payload = json_encode(array("mensaje" => "Usuarios importados con exito."));
+      $response->getBody()->write($payload);
+    }else{
+      $payload = json_encode(array("mensaje" => "Error no se adjunto ningun archivo."));
+      $response->getBody()->write($payload);
     }
-
-    $payload = json_encode(array("mensaje" => "Usuarios importados con exito."));
-    $response->getBody()->write($payload);
+    
     return $response
       ->withHeader('Content-Type', 'application/json');
   }
@@ -181,7 +187,7 @@ class EmpleadoController extends Empleado
     // Cerrar el archivo
     fclose($archivo);
 
-    $payload = json_encode(array("mensaje" => "Usuarios importados con exito."));
+    $payload = json_encode(array("mensaje" => "Usuarios exportados con exito."));
     $response->getBody()->write($payload);
     return $response
       ->withHeader('Content-Type', 'application/json');

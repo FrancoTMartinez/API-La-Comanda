@@ -66,7 +66,7 @@ class ProductoController extends Producto
         $precio = $parametros['precio'];
         $tiempoEstimado = $parametros['tiempoEstimado'];
     
-        $producto->setSector(strtolower($sector));
+        $producto->setSector($sector);
         $producto->setNombre($nombre);
         $producto->setPrecio($precio);
         $producto->setTiempoEstimado($tiempoEstimado);
@@ -97,6 +97,17 @@ class ProductoController extends Producto
       $payload = json_encode(array("mensaje" => "ID no coincide con ningun Producto"));
     }
 
+    $response->getBody()->write($payload);
+    return $response
+      ->withHeader('Content-Type', 'application/json');
+  }
+
+  public static function Imprimir($request, $response, $args)
+  {
+      Producto::ImprimirPDF();
+
+
+      $payload = json_encode(array("mensaje" => ""));
     $response->getBody()->write($payload);
     return $response
       ->withHeader('Content-Type', 'application/json');

@@ -48,29 +48,41 @@ class MesaController extends Mesa
 
   public static function ModificarUno($request, $response, $args)
   {
-    $codigoMesa = $args['codigo_mesa'];
-
-    $mesa = Mesa::GetById($codigoMesa);
-
-    if ($mesa != false) {
-      $parametros = $request->getParsedBody();
-      if (isset($parametros['estado'])) {
-
-        $mesa->set_estado($parametros['estado']);
-        Mesa::Update($mesa);
-
-        $payload = json_encode(array("mensaje" => "Estado de la mesa modificado con exito"));
+      $codigoMesa = $args['codigo_mesa'];
+      
+      $mesa = Mesa::GetById($codigoMesa);
+  
+      if ($mesa == false) {
+          $payload = json_encode(array("mensaje" => "ID no coincide con ninguna Mesa"));
       } else {
-        $payload = json_encode(array("mensaje" => "El estado de la mesa no se modificar por falta de campos"));
-      }
-    } else {
-      $payload = json_encode(array("mensaje" => "ID no coinciden con ninguna Mesa"));
-    }
+          $parametros = $request->getParsedBody();
+  
+          if (isset($parametros['estado'])) {
+              $estado = $parametros['estado'];
+              $header = $request->getHeaderLine("Authorization");
+              $token = trim(explode("Bearer", $header)[1]);
+              $data = AutentificadorJWT::ObtenerData($token);
+  
+              // Verificar roles y estado permitido
+              if (($data->rol == "mozo" && strtolower($estado) !== Estado::CERRADA) ||
+                  ($data->rol == "socio" && strtolower($estado) === Estado::CERRADA)) {
 
-    $response->getBody()->write($payload);
-    return $response
-      ->withHeader('Content-Type', 'application/json');
+                  $mesa->set_estado(strtolower($estado));
+                  Mesa::Update($mesa);
+  
+                  $payload = json_encode(array("mensaje" => "Estado de la mesa modificado con éxito"));
+              } else {
+                  $payload = json_encode(array("mensaje" => "Acceso no autorizado para modificar el estado de la mesa"));
+              }
+          } else {
+              $payload = json_encode(array("mensaje" => "Falta el campo 'estado' para modificar el estado de la mesa"));
+          }
+      }
+  
+      $response->getBody()->write($payload);
+      return $response->withHeader('Content-Type', 'application/json');
   }
+  
 
   public static function BorrarUno($request, $response, $args)
   {
@@ -82,6 +94,15 @@ class MesaController extends Mesa
     } else {
       $payload = json_encode(array("mensaje" => "ID no coincide con ninguna Mesa"));
     }
+
+    $response->getBody()->write($payload);
+    return $response
+      ->withHeader('Content-Type', 'application/json');
+  }
+
+  public static function TraerUsosDeMesa($request, $response, $args)
+  {
+      $payload = json_encode(Mesa::GetUsosMesas());
 
     $response->getBody()->write($payload);
     return $response
